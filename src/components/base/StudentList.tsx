@@ -38,7 +38,7 @@ export default function StudentList({ students, onSelect, selected = ""  }: { st
         >
           {selected
             ? studentList.find((student) => student.value === selected)?.label
-            : "Select framework..."}
+            : "Выбери себя..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
