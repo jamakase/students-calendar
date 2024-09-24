@@ -9,7 +9,7 @@ import { GroupType, groupTypeLength } from "./group";
 
 import path from 'path';
 
-const sheetPath = path.resolve(process.cwd() + "/src", 'Расписание - ТехПред МФТИ 2024-26.xlsx');
+const sheetPath = path.resolve(process.cwd() + "/src", 'schedule.xlsx');
 
 function readXLSX(filePath: string) {
   const fileData = fs.readFileSync(filePath);
