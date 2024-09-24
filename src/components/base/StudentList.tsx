@@ -34,7 +34,7 @@ export default function StudentList({ students, onSelect, selected = ""  }: { st
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between"
+          className="w-[300px] justify-between"
         >
           {selected
             ? studentList.find((student) => student.value === selected)?.label
@@ -42,7 +42,7 @@ export default function StudentList({ students, onSelect, selected = ""  }: { st
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
+      <PopoverContent className="w-[300px] p-0">
         <Command>
           <CommandInput placeholder="Search framework..." />
           <CommandList>
