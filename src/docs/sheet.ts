@@ -230,7 +230,7 @@ export async function getStudentSchedule(studentName: string) {
 
 export async function generateICS(studentName: string): Promise<string> {
   const studentSchedule = await getStudentSchedule(studentName);
-  const timeZone = "Europe/Moscow";
+  const timeZone = "UTC";
 
   const cal = ical({ name: `${studentName}'s Schedule` });
 
