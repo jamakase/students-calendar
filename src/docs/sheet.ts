@@ -7,9 +7,9 @@ import { fromZonedTime } from "date-fns-tz";
 
 import { GroupType, groupTypeLength } from "./group";
 
-import path from 'path';
+import path from "path";
 
-const sheetPath = path.resolve(process.cwd() + "/src", 'schedule.xlsx');
+const sheetPath = path.resolve(process.cwd() + "/src", "schedule.xlsx");
 
 function readXLSX(filePath: string) {
   const fileData = fs.readFileSync(filePath);
@@ -51,12 +51,12 @@ function extractStudentsInfo(
   // Process data rows
   sheetData.slice(1).forEach((row: unknown) => {
     if (Array.isArray(row) && row.length > 1) {
-      const student = row[0] as string;
+      const student = row[0].toString().trim();
       studentToGroupMap[student] = {};
 
       courses.forEach((course, index) => {
         const value = row[index + 1];
-        studentToGroupMap[student][course] = value.toString();
+        studentToGroupMap[student][course] = value.toString().trim();
       });
     }
   });
@@ -74,6 +74,7 @@ type MergeCell = {
   datetimeend: Date;
   groupType: GroupType | undefined;
   group: string | undefined;
+  details: string;
 };
 
 const mergedCells: MergeCell[] = extractTimetable(
@@ -151,9 +152,18 @@ function extractTimetable(worksheet: XLSX.WorkSheet): MergeCell[] {
 
             const timeCell =
               worksheet[XLSX.utils.encode_cell({ r: rowIndex, c: 2 })]?.w;
-            const [timestart, timeend] = timeCell
-              ? timeCell.split("-")
-              : [undefined, undefined];
+
+            let timestart: string | undefined = undefined;
+            let timeend: string | undefined = undefined;
+
+            if (cell.v === "Коммерциализация R&D. Вебинар 3" && group === "2") {
+              timestart = "14:00";
+              timeend = "17:15";
+            } else {
+              [timestart, timeend] = timeCell
+                ? timeCell.split("-")
+                : [undefined, undefined];
+            }
 
             const excelDate =
               worksheet[XLSX.utils.encode_cell({ r: rowIndex, c: 0 })]?.v;
@@ -171,15 +181,21 @@ function extractTimetable(worksheet: XLSX.WorkSheet): MergeCell[] {
               return moscowDate;
             };
 
-            const start = timestart && createMoscowDate(dateStart, timestart);
-            const end = (timeend || timestart) &&
-              createMoscowDate(dateStart, timeend || timestart);
+            // @ts-expect-error bbb
+            const start: Date = timestart
+              ? createMoscowDate(dateStart, timestart)
+              : null;
+            const end: Date = timeend
+              ? createMoscowDate(dateStart, timeend)
+              : start;
 
             const mergedCellInfo = {
               datetimestart: start,
               datetimeend: end,
               startAddress: startAddress,
               endAddress: endAddress,
+              details: worksheet[XLSX.utils.encode_cell({ r: rowIndex, c: 19 })]
+                ?.v,
               value: cell.v,
               groupType: type,
               group: group,
@@ -224,8 +240,8 @@ export async function generateICS(studentName: string): Promise<string> {
         start: event.datetimestart,
         end: event.datetimeend,
         summary: event.value,
-        location: `Room ${event.startAddress}`,
-        description: `Group: ${event.group}, Type: ${event.groupType}`,
+        description:
+          `Zoom: ${event.details}, Group: ${event.group}, Type: ${event.groupType}`,
         timezone: timeZone,
       });
     }

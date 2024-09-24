@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import StudentList from "./StudentList";
 import { Button } from "../ui/button";
 
@@ -11,7 +11,7 @@ export default function Sheets({
 }) {
   const [selected, setSelected] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const students = Object.keys(studentToGroupMap);
+  const students = useMemo(() => Object.keys(studentToGroupMap).sort(), [studentToGroupMap]);
 
   const generateICS = async (studentName: string) => {
     setLoading(true);
