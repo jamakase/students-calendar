@@ -6,7 +6,7 @@ export async function GET(
 ) {
   const { studentName } = params;
   try {
-    const icsContent = await generateICS(studentName);
+    const icsContent = await generateICS(decodeURIComponent(studentName));
     return new Response(icsContent, {
       headers: {
         "Content-Type": "text/calendar",
