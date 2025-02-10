@@ -9,7 +9,7 @@ import { GroupType, groupTypeLength } from "./group";
 
 import path from "path";
 
-const sheetPath = path.resolve(process.cwd() + "/src", "schedule.xlsx");
+const sheetPath = path.resolve(process.cwd() + "/src", "schedule2.xlsx");
 
 function readXLSX(filePath: string) {
   const fileData = fs.readFileSync(filePath);
@@ -29,7 +29,7 @@ function extractStudentsInfo(
   studentToGroupMap: Record<string, Record<string, string>>;
   courses: string[];
 } {
-  const STUDEN_SHEET_NAME = "1 семестр. Распределение на под";
+  const STUDEN_SHEET_NAME = "2 семестр. Распределение на под";
   const worksheet = workbook.Sheets[STUDEN_SHEET_NAME];
 
   const studentToGroupMap: Record<string, Record<string, string>> = {};
@@ -44,13 +44,15 @@ function extractStudentsInfo(
 
   // Convert the worksheet to JSON for easier data manipulation
   const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-  // Extract header row (course names)
+  // Extract header row.
+  // Assuming first column is 'ФИО' and last column is elective course (e.g. "Курс по выбору")
   const headerRow = sheetData[0] as string[];
-  courses.push(...headerRow.slice(1, -1)); // Exclude 'ФИО' and 'Пожелания'
+  // Take only the main courses (excluding the first and last)
+  courses.push(...headerRow.slice(1, headerRow.length - 1));
 
-  // Process data rows
+  // Process data rows and save elective course separately as "selectedCourse"
   sheetData.slice(1).forEach((row: unknown) => {
-    if (Array.isArray(row) && row.length > 1) {
+    if (Array.isArray(row) && row.length >= headerRow.length) {
       const student = row[0].toString().trim();
       studentToGroupMap[student] = {};
 
@@ -58,6 +60,8 @@ function extractStudentsInfo(
         const value = row[index + 1];
         studentToGroupMap[student][course] = value.toString().trim();
       });
+      // Save elective course selection as a special field
+      studentToGroupMap[student].selectedCourse = row[headerRow.length - 1].toString().trim();
     }
   });
 
@@ -212,14 +216,31 @@ function extractTimetable(worksheet: XLSX.WorkSheet): MergeCell[] {
 
 export async function getStudentSchedule(studentName: string) {
   const studentGroups = studentToGroupMap[studentName];
+  // Retrieve elective course selection from student info
+  const electiveCourse = studentGroups.selectedCourse;
+  
   const studentSchedule = mergedCells.filter((cell) => {
     if (cell.group === "all") {
       return true;
     }
-    const matchingCourse = courses.find((course) =>
-      cell.value.toLowerCase().includes(course.toLowerCase())
-    );
-    if (matchingCourse && cell.group === studentGroups[matchingCourse]) {
+    
+    // Try finding a matching main course.
+    const matchingCourse = courses.find((course) => {
+      // For English course, the event uses a shorter name (e.g. "англ"),
+      // so check against that.
+      if (course.toLowerCase() === "английский язык") {
+        return cell.value.toLowerCase().includes("англ");
+      }
+      return cell.value.toLowerCase().includes(course.toLowerCase());
+    });
+    
+    // If found and the group number matches then include the event.
+    if (matchingCourse && studentGroups[matchingCourse] && cell.group === studentGroups[matchingCourse]) {
+      return true;
+    }
+    
+    // ALSO: If the event text includes the elective course selected by the student, include it.
+    if (electiveCourse && cell.value.toLowerCase().includes(electiveCourse.toLowerCase())) {
       return true;
     }
     return false;

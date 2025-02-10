@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import StudentList from "./StudentList";
 import { Button } from "../ui/button";
+import CalendarPreview from "./CalendarPreview";
 
 export default function Sheets({
   studentToGroupMap,
@@ -11,10 +12,13 @@ export default function Sheets({
 }) {
   const [selected, setSelected] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [icsContent, setIcsContent] = useState<string | null>(null);
+
   const students = useMemo(() => Object.keys(studentToGroupMap).sort(), [studentToGroupMap]);
 
   const generateICS = async (studentName: string) => {
     setLoading(true);
+    setIcsContent(null);
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
@@ -29,13 +33,8 @@ export default function Sheets({
       }
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${studentName.replace(/\s+/g, "_")}_schedule.ics`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      const icsText = await blob.text();
+      setIcsContent(icsText);
     } catch (error) {
       console.error(error);
     } finally {
@@ -51,6 +50,7 @@ export default function Sheets({
         selected={selected}
       />
       {selected && <Button onClick={() => generateICS(selected)} disabled={loading}>Generate ICS</Button>}
+      {icsContent && <CalendarPreview icsContent={icsContent} />}
     </>
   );
 }
