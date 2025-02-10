@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -19,8 +20,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-export default function StudentList({ students, onSelect, selected = ""  }: { students: string[], onSelect: (student: string) => void, selected: string }) {
+export default function StudentList({ students }: { students: string[] }) {
   const [open, setOpen] = React.useState(false);
+  const router = useRouter();
 
   const studentList = students.map((student) => ({
     value: student,
@@ -36,17 +38,15 @@ export default function StudentList({ students, onSelect, selected = ""  }: { st
           aria-expanded={open}
           className="w-[300px] justify-between"
         >
-          {selected
-            ? studentList.find((student) => student.value === selected)?.label
-            : "Выбери себя..."}
+          {"Выбери себя..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0">
         <Command>
-          <CommandInput placeholder="Search framework..." />
+          <CommandInput placeholder="Search student..." />
           <CommandList>
-            <CommandEmpty>No framework found.</CommandEmpty>
+            <CommandEmpty>No student found.</CommandEmpty>
             <CommandGroup>
               {studentList.map((student) => (
                 <CommandItem
@@ -54,13 +54,13 @@ export default function StudentList({ students, onSelect, selected = ""  }: { st
                   value={student.value}
                   onSelect={(currentValue) => {
                     setOpen(false);
-                    onSelect(currentValue);
+                    router.push(`/students/${encodeURIComponent(currentValue)}`);
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      selected === student.value ? "opacity-100" : "opacity-0"
+                      "opacity-0"
                     )}
                   />
                   {student.label}

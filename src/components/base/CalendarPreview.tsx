@@ -35,14 +35,30 @@ export default function CalendarPreview({ icsContent }: CalendarPreviewProps) {
   }, [icsContent]);
 
   return (
-    <div className="mt-4">
-      <h2 className="text-lg font-bold mb-2">Calendar Preview</h2>
+    <div className="rounded-lg overflow-hidden">
       <FullCalendar
         plugins={[dayGridPlugin]}
         initialView="dayGridMonth"
         firstDay={1}
         events={events}
         height="auto"
+        headerToolbar={{
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,dayGridWeek'
+        }}
+        buttonText={{
+          today: 'Today',
+          month: 'Month',
+          week: 'Week'
+        }}
+        dayMaxEvents={true}
+        eventDisplay="block"
+        eventTimeFormat={{
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }}
       />
     </div>
   );

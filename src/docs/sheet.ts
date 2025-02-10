@@ -226,17 +226,33 @@ export async function getStudentSchedule(studentName: string) {
     
     // Try finding a matching main course.
     const matchingCourse = courses.find((course) => {
-      // For English course, the event uses a shorter name (e.g. "англ"),
-      // so check against that.
-      if (course.toLowerCase() === "английский язык") {
-        return cell.value.toLowerCase().includes("англ");
+      const lowerCourse = course.toLowerCase();
+      const lowerValue = cell.value.toLowerCase();
+      // For English course, use the short form.
+      if (lowerCourse === "английский язык") {
+        return lowerValue.includes("англ");
       }
-      return cell.value.toLowerCase().includes(course.toLowerCase());
+      // For Тьюториал, also match the alias "разбор проектов".
+      if (lowerCourse === "тьюториал") {
+        return lowerValue.includes("тьюториал") || lowerValue.includes("разбор проектов");
+      }
+      return lowerValue.includes(lowerCourse);
     });
     
-    // If found and the group number matches then include the event.
-    if (matchingCourse && studentGroups[matchingCourse] && cell.group === studentGroups[matchingCourse]) {
-      return true;
+    if (matchingCourse && studentGroups[matchingCourse]) {
+      // Check if the event text contains "подгруппа"
+      const subgroupMatch = cell.value.match(/подгруппа\s*(\d+)/i);
+      if (subgroupMatch) {
+        // Compare the extracted subgroup number to the student's chosen group
+        if (studentGroups[matchingCourse] === subgroupMatch[1]) {
+          return true;
+        }
+      } else {
+        // Otherwise, fall back to the existing column-based grouping logic.
+        if (cell.group === studentGroups[matchingCourse]) {
+          return true;
+        }
+      }
     }
     
     // ALSO: If the event text includes the elective course selected by the student, include it.

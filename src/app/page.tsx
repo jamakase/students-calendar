@@ -1,16 +1,24 @@
-import Sheets from "@/components/base/Sheets";
 import { getStudentMap } from "@/docs/sheet";
+import StudentList from "@/components/base/StudentList";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function Home() {
   const studentToGroupMap = await getStudentMap();
+  const students = Object.keys(studentToGroupMap).sort();
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Sheets studentToGroupMap={studentToGroupMap}/>
-      </main>
-      {/* <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-      </footer> */}
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
+      <Card className="w-full max-w-lg">
+        <CardHeader className="text-center">
+          <CardTitle className="text-3xl font-bold">Students Calendar</CardTitle>
+          <CardDescription>Select your name to view your schedule</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center">
+            <StudentList students={students} />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

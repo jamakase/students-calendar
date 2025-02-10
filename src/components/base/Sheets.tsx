@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import StudentList from "./StudentList";
 import { Button } from "../ui/button";
 import CalendarPreview from "./CalendarPreview";
@@ -12,9 +12,7 @@ export default function Sheets({
   studentToGroupMap: Record<string, Record<string, string>>;
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialStudent = searchParams.get("student") || "";
-  const [selected, setSelected] = useState<string>(initialStudent);
+  const [selected, setSelected] = useState<string>("");
   const [icsContent, setIcsContent] = useState<string | null>(null);
 
   const students = useMemo(() => Object.keys(studentToGroupMap).sort(), [studentToGroupMap]);
@@ -49,10 +47,10 @@ export default function Sheets({
     }
   }, [selected]);
 
-  // Update URL query params when student selection changes.
+  // Navigate to the dynamic student route, replacing URL without query params
   useEffect(() => {
     if (selected) {
-      router.replace(`?student=${encodeURIComponent(selected)}`);
+      router.replace(`/students/${encodeURIComponent(selected)}`);
     }
   }, [selected, router]);
 
