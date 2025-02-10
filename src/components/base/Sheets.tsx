@@ -11,13 +11,11 @@ export default function Sheets({
   studentToGroupMap: Record<string, Record<string, string>>;
 }) {
   const [selected, setSelected] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
   const [icsContent, setIcsContent] = useState<string | null>(null);
 
   const students = useMemo(() => Object.keys(studentToGroupMap).sort(), [studentToGroupMap]);
 
   const generateICS = async (studentName: string) => {
-    setLoading(true);
     setIcsContent(null);
     try {
       const response = await fetch('/api/generate', {
@@ -37,8 +35,6 @@ export default function Sheets({
       setIcsContent(icsText);
     } catch (error) {
       console.error(error);
-    } finally {
-      setLoading(false);
     }
   };
 
