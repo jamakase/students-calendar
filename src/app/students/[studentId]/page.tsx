@@ -30,6 +30,11 @@ export default async function StudentDetailPage({ params }: { params: { studentI
   const host = headersList.get("host") || "localhost:3000";
   const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
 
+  // Create calendar URLs
+  const calendarUrl = `${protocol}://${host}/api/calendar/${encodeURIComponent(decodedStudentId)}`;
+  const googleCalendarUrl = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(calendarUrl.replace(/^https?:/, 'webcal:'))}`;
+  const yandexCalendarUrl = `https://calendar.yandex.com/import?url=${encodeURIComponent(calendarUrl)}`;
+
   // Fetch the student's schedule as ICS content
   const res = await fetch(`${protocol}://${host}/api/generate`, {
     method: "POST",
@@ -58,7 +63,7 @@ export default async function StudentDetailPage({ params }: { params: { studentI
           </Link>
           <div className="flex gap-2">
             <a
-              href={`${protocol}://${host}/api/calendar/${encodeURIComponent(decodedStudentId)}`}
+              href={calendarUrl}
               download={`${decodedStudentId.replace(/\s+/g, "_")}_schedule.ics`}
             >
               <Button variant="outline" size="sm">
@@ -67,7 +72,7 @@ export default async function StudentDetailPage({ params }: { params: { studentI
               </Button>
             </a>
             <a
-              href={`https://calendar.google.com/calendar/render?cid=${encodeURIComponent(`${protocol}://${host}/api/calendar/${encodeURIComponent(decodedStudentId)}`)}`}
+              href={googleCalendarUrl}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -77,7 +82,7 @@ export default async function StudentDetailPage({ params }: { params: { studentI
               </Button>
             </a>
             <a
-              href={`https://calendar.yandex.com/import?url=${encodeURIComponent(`${protocol}://${host}/api/calendar/${encodeURIComponent(decodedStudentId)}`)}`}
+              href={yandexCalendarUrl}
               target="_blank"
               rel="noopener noreferrer"
             >
