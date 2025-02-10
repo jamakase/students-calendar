@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import StudentList from "./StudentList";
 import { Button } from "../ui/button";
 import CalendarPreview from "./CalendarPreview";
@@ -42,6 +42,46 @@ export default function Sheets({
     }
   };
 
+  // Automatically generate ICS when a student is selected.
+  useEffect(() => {
+    if (selected) {
+      generateICS(selected);
+    }
+  }, [selected]);
+
+  // Function to trigger download of the generated ICS file.
+  const downloadICS = () => {
+    if (!icsContent) return;
+    const blob = new Blob([icsContent], { type: "text/calendar" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${selected.replace(/\s+/g, "_")}_schedule.ical`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  // Function to trigger adding the calendar to Google Calendar.
+  const addToGoogleCalendar = () => {
+    if (!icsContent) return;
+    const blob = new Blob([icsContent], { type: "text/calendar" });
+    const blobUrl = window.URL.createObjectURL(blob);
+    // Google Calendar supports adding calendars by URL via the 'cid' parameter.
+    // Note: This might not work perfectly with a blob URL.
+    const googleUrl = "https://calendar.google.com/calendar/render?cid=" + encodeURIComponent(blobUrl);
+    window.open(googleUrl, "_blank");
+  };
+  
+  // Function to trigger adding the calendar to Yandex Calendar.
+  const addToYandexCalendar = () => {
+    if (!icsContent) return;
+    const blob = new Blob([icsContent], { type: "text/calendar" });
+    const blobUrl = window.URL.createObjectURL(blob);
+    const yandexUrl = "https://calendar.yandex.com/import?url=" + encodeURIComponent(blobUrl);
+    window.open(yandexUrl, "_blank");
+  };
+
   return (
     <>
       <StudentList
@@ -49,8 +89,14 @@ export default function Sheets({
         onSelect={setSelected}
         selected={selected}
       />
-      {selected && <Button onClick={() => generateICS(selected)} disabled={loading}>Generate ICS</Button>}
-      {icsContent && <CalendarPreview icsContent={icsContent} />}
+      {icsContent && (
+        <>
+          <CalendarPreview icsContent={icsContent} />
+          <Button onClick={downloadICS}>Download ICS</Button>
+          <Button onClick={addToGoogleCalendar}>Add to Google Calendar</Button>
+          <Button onClick={addToYandexCalendar}>Add to Yandex Calendar</Button>
+        </>
+      )}
     </>
   );
 }
