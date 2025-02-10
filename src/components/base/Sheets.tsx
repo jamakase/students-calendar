@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import StudentList from "./StudentList";
 import { Button } from "../ui/button";
 import CalendarPreview from "./CalendarPreview";
@@ -10,7 +11,10 @@ export default function Sheets({
 }: {
   studentToGroupMap: Record<string, Record<string, string>>;
 }) {
-  const [selected, setSelected] = useState<string>("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialStudent = searchParams.get("student") || "";
+  const [selected, setSelected] = useState<string>(initialStudent);
   const [icsContent, setIcsContent] = useState<string | null>(null);
 
   const students = useMemo(() => Object.keys(studentToGroupMap).sort(), [studentToGroupMap]);
@@ -45,6 +49,13 @@ export default function Sheets({
     }
   }, [selected]);
 
+  // Update URL query params when student selection changes.
+  useEffect(() => {
+    if (selected) {
+      router.replace(`?student=${encodeURIComponent(selected)}`);
+    }
+  }, [selected, router]);
+
   // Function to trigger download of the generated ICS file.
   const downloadICS = () => {
     if (!icsContent) return;
@@ -58,23 +69,19 @@ export default function Sheets({
     a.remove();
   };
 
-  // Function to trigger adding the calendar to Google Calendar.
+  // Function to trigger adding the calendar to Google Calendar using the public API endpoint.
   const addToGoogleCalendar = () => {
-    if (!icsContent) return;
-    const blob = new Blob([icsContent], { type: "text/calendar" });
-    const blobUrl = window.URL.createObjectURL(blob);
-    // Google Calendar supports adding calendars by URL via the 'cid' parameter.
-    // Note: This might not work perfectly with a blob URL.
-    const googleUrl = "https://calendar.google.com/calendar/render?cid=" + encodeURIComponent(blobUrl);
+    if (!selected) return;
+    const publicCalendarUrl = `${window.location.origin}/api/calendar/${encodeURIComponent(selected)}`;
+    const googleUrl = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(publicCalendarUrl)}`;
     window.open(googleUrl, "_blank");
   };
   
-  // Function to trigger adding the calendar to Yandex Calendar.
+  // Function to trigger adding the calendar to Yandex Calendar using the public API endpoint.
   const addToYandexCalendar = () => {
-    if (!icsContent) return;
-    const blob = new Blob([icsContent], { type: "text/calendar" });
-    const blobUrl = window.URL.createObjectURL(blob);
-    const yandexUrl = "https://calendar.yandex.com/import?url=" + encodeURIComponent(blobUrl);
+    if (!selected) return;
+    const publicCalendarUrl = `${window.location.origin}/api/calendar/${encodeURIComponent(selected)}`;
+    const yandexUrl = `https://calendar.yandex.com/import?url=${encodeURIComponent(publicCalendarUrl)}`;
     window.open(yandexUrl, "_blank");
   };
 
