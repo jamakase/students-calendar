@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
@@ -22,6 +22,7 @@ import {
 
 export default function StudentList({ students }: { students: string[] }) {
   const [open, setOpen] = React.useState(false);
+  const [isPending, startTransition] = React.useTransition();
   const router = useRouter();
 
   const studentList = students.map((student) => ({
@@ -37,14 +38,24 @@ export default function StudentList({ students }: { students: string[] }) {
           role="combobox"
           aria-expanded={open}
           className="w-[300px] justify-between"
+          disabled={isPending}
         >
-          {"Выбери себя..."}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          {isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Loading...
+            </>
+          ) : (
+            <>
+              {"Выбери себя..."}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </>
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0">
         <Command>
-          <CommandInput placeholder="Search student..." />
+          <CommandInput placeholder="Search student..." disabled={isPending} />
           <CommandList>
             <CommandEmpty>No student found.</CommandEmpty>
             <CommandGroup>
@@ -54,8 +65,11 @@ export default function StudentList({ students }: { students: string[] }) {
                   value={student.value}
                   onSelect={(currentValue) => {
                     setOpen(false);
-                    router.push(`/students/${encodeURIComponent(currentValue)}`);
+                    startTransition(() => {
+                      router.push(`/students/${encodeURIComponent(currentValue)}`);
+                    });
                   }}
+                  disabled={isPending}
                 >
                   <Check
                     className={cn(
