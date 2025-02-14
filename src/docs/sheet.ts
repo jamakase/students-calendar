@@ -214,6 +214,31 @@ function extractTimetable(worksheet: XLSX.WorkSheet): MergeCell[] {
   return mergedCells;
 }
 
+const courseAliases: Record<string, string[]> = {
+  "английский язык": ["англ"],
+  "тьюториал": ["тьюториал", "разбор проектов"],
+  "маркетинг инновационных продуктов": ["маркетинг"],
+  "системная инженерия": ["систем. инж"]
+};
+
+function matchesCourseWithAliases(courseName: string, eventText: string): boolean {
+  const lowerEventText = eventText.toLowerCase();
+  const lowerCourseName = courseName.toLowerCase();
+  
+  // Check direct match first
+  if (lowerEventText.includes(lowerCourseName)) {
+    return true;
+  }
+  
+  // Check aliases if they exist
+  const aliases = courseAliases[lowerCourseName];
+  if (aliases) {
+    return aliases.some(alias => lowerEventText.includes(alias));
+  }
+  
+  return false;
+}
+
 export async function getStudentSchedule(studentName: string) {
   const studentGroups = studentToGroupMap[studentName];
   // Retrieve elective course selection from student info
@@ -289,4 +314,41 @@ export async function generateICS(studentName: string): Promise<string> {
 
 export async function getStudentMap() {
   return studentToGroupMap;
+}
+
+// Export the list of courses for use in the courses page
+export async function getCoursesList() {
+  return courses;
+}
+
+export async function getCourseICS(courseName: string): Promise<string> {
+  // Filter the timetable events for the given course name (using aliases if available)
+  const courseEvents = mergedCells.filter((cell) =>
+    matchesCourseWithAliases(courseName, cell.value)
+  );
+  // Deduplicate events with same start time, end time and value
+  const uniqueEvents = courseEvents.reduce((acc, event) => {
+    const key = `${event.datetimestart}-${event.datetimeend}-${event.value}`;
+    if (!acc[key]) {
+      acc[key] = event;
+    }
+    return acc;
+  }, {} as Record<string, typeof courseEvents[0]>);
+
+  const timeZone = "UTC";
+  const cal = ical({ name: `${courseName} Schedule` });
+
+  Object.values(uniqueEvents).forEach((event) => {
+    if (event.datetimestart && event.datetimeend) {
+      cal.createEvent({
+        start: event.datetimestart,
+        end: event.datetimeend,
+        summary: event.value,
+        description: `Zoom: ${event.details}, Group: ${event.group}, Type: ${event.groupType}`,
+        timezone: timeZone,
+      });
+    }
+  });
+
+  return cal.toString();
 }

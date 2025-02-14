@@ -5,39 +5,34 @@ import CalendarPreview from '@/components/base/CalendarPreview';
 import { headers } from 'next/headers';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, Calendar, User, Users } from "lucide-react";
+import { ArrowLeft, Download, Calendar, Book, Users } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
-export async function generateMetadata({ params }: { params: { studentId: string } }) {
-  const { studentId } = params;
-  const decodedStudentId = decodeURIComponent(studentId);
-  const studentMap = await getStudentMap();
-  const studentInfo = studentMap[decodedStudentId];
-
-  if (!studentInfo) {
-    return {
-      title: "Student Not Found",
-      description: "The requested student schedule could not be found"
-    };
-  }
+export async function generateMetadata({ params }: { params: { courseId: string } }) {
+  const { courseId } = params;
+  const decodedCourseId = decodeURIComponent(courseId);
 
   return {
-    title: decodedStudentId,
-    description: `View and manage schedule for ${decodedStudentId} from group ${studentInfo.group}`,
+    title: decodedCourseId,
+    description: `View and manage schedule for course ${decodedCourseId}`,
     openGraph: {
-      title: `Schedule for ${decodedStudentId}`,
-      description: `View and manage schedule for ${decodedStudentId} from group ${studentInfo.group}`
+      title: `Schedule for ${decodedCourseId}`,
+      description: `View and manage schedule for course ${decodedCourseId}`
     }
   };
 }
 
-export default async function StudentDetailPage({ params }: { params: { studentId: string } }) {
-  const { studentId } = params;
-  const decodedStudentId = decodeURIComponent(studentId);
+export default async function CourseDetailPage({ params }: { params: { courseId: string } }) {
+  const { courseId } = params;
+  const decodedCourseId = decodeURIComponent(courseId);
   const studentMap = await getStudentMap();
-  const studentInfo = studentMap[decodedStudentId];
+  
+  // Get all students taking this course
+  const studentsInCourse = Object.entries(studentMap)
+    .filter(([, info]) => Object.entries(info).filter(([key]) => key !== 'selectedCourse').some(([course]) => course === decodedCourseId))
+    .map(([student]) => student);
 
-  if (!studentInfo) {
+  if (studentsInCourse.length === 0) {
     notFound();
   }
 
@@ -47,7 +42,7 @@ export default async function StudentDetailPage({ params }: { params: { studentI
   const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
 
   // Create calendar URLs
-  const calendarUrl = `${protocol}://${host}/api/calendar/${encodeURIComponent(decodedStudentId)}`;
+  const calendarUrl = `${protocol}://${host}/api/calendar/course/${encodeURIComponent(decodedCourseId)}`;
   const googleCalendarUrl = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(calendarUrl.replace(/^https?:/, 'webcal:'))}`;
   const yandexCalendarUrl = `https://calendar.yandex.com/import?url=${encodeURIComponent(calendarUrl.replace(/^https?:/, 'webcal:'))}`;
 
@@ -64,13 +59,13 @@ export default async function StudentDetailPage({ params }: { params: { studentI
           <Separator orientation="vertical" className="mx-2 md:mx-4 h-6" />
           <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
             <div className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              <span className="font-medium text-sm md:text-base">{decodedStudentId}</span>
+              <Book className="h-4 w-4" />
+              <span className="font-medium text-sm md:text-base">{decodedCourseId}</span>
             </div>
             <div className="flex items-center gap-2">
               <Separator orientation="vertical" className="hidden md:block mx-2 h-4" />
               <Users className="h-4 w-4" />
-              <span className="text-muted-foreground text-sm md:text-base">{studentInfo.group}</span>
+              <span className="text-muted-foreground text-sm md:text-base">{studentsInCourse.length} students enrolled</span>
             </div>
           </div>
         </div>
@@ -85,7 +80,7 @@ export default async function StudentDetailPage({ params }: { params: { studentI
                 Calendar Actions
               </CardTitle>
               <CardDescription className="text-sm">
-                Download or add your schedule to your preferred calendar application
+                Download or add the course schedule to your preferred calendar application
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4 md:p-6">
@@ -98,7 +93,7 @@ export default async function StudentDetailPage({ params }: { params: { studentI
                 >
                   <a
                     href={calendarUrl}
-                    download={`${decodedStudentId.replace(/\s+/g, "_")}_schedule.ics`}
+                    download={`${decodedCourseId.replace(/\s+/g, "_")}_schedule.ics`}
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Download ICS
@@ -145,7 +140,7 @@ export default async function StudentDetailPage({ params }: { params: { studentI
                 Schedule Preview
               </CardTitle>
               <CardDescription className="text-sm">
-                View your schedule in a calendar format
+                View the course schedule in a calendar format
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
