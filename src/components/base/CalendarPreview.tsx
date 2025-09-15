@@ -56,17 +56,24 @@ const CalendarPreview: React.FC<CalendarPreviewProps> = ({ calendarUrl }) => {
         .map((vevent) => {
           try {
             const event = new ICAL.Event(vevent);
+            const startDate = event.startDate ? event.startDate.toJSDate() : null;
+            const endDate = event.endDate ? event.endDate.toJSDate() : null;
+            
+            if (!startDate) {
+              return null;
+            }
+            
             return {
               title: event.summary || "",
-              start: event.startDate ? event.startDate.toJSDate() : "",
-              end: event.endDate ? event.endDate.toJSDate() : "",
+              start: startDate,
+              end: endDate || startDate,
             };
           } catch (eventError) {
             console.error("Error processing event:", eventError);
             return null;
           }
         })
-        .filter((e) => e && e.start); // Ensure we only include events with a valid start
+        .filter((e) => e !== null); // Filter out null values
     } catch (error) {
       console.error("Error parsing ICS:", error);
       return [];
