@@ -30,20 +30,43 @@ const CalendarPreview: React.FC<CalendarPreviewProps> = ({ calendarUrl }) => {
 
   const events = useMemo(() => {
     try {
+      if (!calendarData || calendarData.trim() === '') {
+        return [];
+      }
+      
       const jcalData = ICAL.parse(calendarData);
+      if (!jcalData) {
+        console.error("Failed to parse ICS data");
+        return [];
+      }
+      
       const vcalendar = new ICAL.Component(jcalData);
+      if (!vcalendar) {
+        console.error("Failed to create calendar component");
+        return [];
+      }
+      
       const vevents = vcalendar.getAllSubcomponents("vevent");
+      if (!vevents || !Array.isArray(vevents)) {
+        console.error("No vevents found in calendar");
+        return [];
+      }
 
       return vevents
         .map((vevent) => {
-          const event = new ICAL.Event(vevent);
-          return {
-            title: event.summary || "",
-            start: event.startDate ? event.startDate.toJSDate() : "",
-            end: event.endDate ? event.endDate.toJSDate() : "",
-          };
+          try {
+            const event = new ICAL.Event(vevent);
+            return {
+              title: event.summary || "",
+              start: event.startDate ? event.startDate.toJSDate() : "",
+              end: event.endDate ? event.endDate.toJSDate() : "",
+            };
+          } catch (eventError) {
+            console.error("Error processing event:", eventError);
+            return null;
+          }
         })
-        .filter((e) => e.start); // Ensure we only include events with a valid start
+        .filter((e) => e && e.start); // Ensure we only include events with a valid start
     } catch (error) {
       console.error("Error parsing ICS:", error);
       return [];

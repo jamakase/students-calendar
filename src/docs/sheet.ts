@@ -9,7 +9,7 @@ import { GroupType, groupTypeLength } from "./group";
 
 import path from "path";
 
-const sheetPath = path.resolve(process.cwd() + "/src", "schedule2.xlsx");
+const sheetPath = path.resolve(process.cwd() + "/src", "schedule3.xlsx");
 
 function readXLSX(filePath: string) {
   const fileData = fs.readFileSync(filePath);
@@ -29,7 +29,7 @@ function extractStudentsInfo(
   studentToGroupMap: Record<string, Record<string, string>>;
   courses: string[];
 } {
-  const STUDEN_SHEET_NAME = "2 семестр. Распределение на под";
+  const STUDEN_SHEET_NAME = "3 семестр. Распределение на под";
   const worksheet = workbook.Sheets[STUDEN_SHEET_NAME];
 
   const studentToGroupMap: Record<string, Record<string, string>> = {};
@@ -47,21 +47,43 @@ function extractStudentsInfo(
   // Extract header row.
   // Assuming first column is 'ФИО' and last column is elective course (e.g. "Курс по выбору")
   const headerRow = sheetData[0] as string[];
-  // Take only the main courses (excluding the first and last)
-  courses.push(...headerRow.slice(1, headerRow.length - 1));
 
-  // Process data rows and save elective course separately as "selectedCourse"
-  sheetData.slice(1).forEach((row: unknown) => {
+  // Вместо удаления "Курс по выбору" из courses, сохраняем все курсы с их индексами
+  // и отдельно запоминаем индекс electiveCourseIndex
+  let electiveCourseIndex = -1;
+  // Массив объектов: { name: string, index: number }
+  const courseColumns: { name: string; index: number }[] = [];
+  for (let i = 1; i < headerRow.length; i++) {
+    const colName = headerRow[i]?.toString().trim();
+    if (colName === "Курс по выбору") {
+      electiveCourseIndex = i;
+    }
+    courseColumns.push({ name: colName, index: i });
+  }
+  // courses - это все курсы кроме "Курс по выбору"
+  courses.push(
+    ...courseColumns
+      .filter((col) => col.name !== "Курс по выбору")
+      .map((col) => col.name)
+  );
+
+  // Теперь при разборе строки используем реальные индексы курсов
+  sheetData.slice(0).forEach((row: unknown) => {
     if (Array.isArray(row) && row.length >= headerRow.length) {
       const student = row[0].toString().trim();
       studentToGroupMap[student] = {};
 
-      courses.forEach((course, index) => {
-        const value = row[index + 1];
-        studentToGroupMap[student][course] = value.toString().trim();
+      courseColumns.forEach((col) => {
+        if (col.name !== "Курс по выбору") {
+          const value = row[col.index];
+          studentToGroupMap[student][col.name] = value?.toString().trim() || "";
+        }
       });
-      // Save elective course selection as a special field
-      studentToGroupMap[student].selectedCourse = row[headerRow.length - 1].toString().trim();
+
+      // selectedCourse берём только из колонки "Курс по выбору"
+      if (electiveCourseIndex !== -1) {
+        studentToGroupMap[student].selectedCourse = row[electiveCourseIndex]?.toString().trim() || "";
+      }
     }
   });
 
@@ -164,9 +186,18 @@ function extractTimetable(worksheet: XLSX.WorkSheet): MergeCell[] {
               timestart = "14:00";
               timeend = "17:15";
             } else {
-              [timestart, timeend] = timeCell
-                ? timeCell.split("-")
-                : [undefined, undefined];
+              // Проверяем, что timeCell содержит время (формат HH:MM), а не дату
+              if (timeCell && /^\d{1,2}:\d{2}-\d{1,2}:\d{2}$/.test(timeCell)) {
+                [timestart, timeend] = timeCell.split("-");
+              } else if (timeCell && /^\d{1,2}:\d{2}$/.test(timeCell)) {
+                // Если только одно время без дефиса
+                timestart = timeCell;
+                timeend = timeCell;
+              } else {
+                // Если это не время (например, "23-25 янв."), пропускаем
+                timestart = undefined;
+                timeend = undefined;
+              }
             }
 
             const excelDate =
@@ -286,6 +317,9 @@ export async function getStudentSchedule(studentName: string) {
     }
     return false;
   });
+
+  console.log("Student schedule:", studentSchedule);
+
 
   return studentSchedule;
 }
