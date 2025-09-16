@@ -249,7 +249,8 @@ const courseAliases: Record<string, string[]> = {
   "английский язык": ["англ"],
   "тьюториал": ["тьюториал", "разбор проектов"],
   "маркетинг инновационных продуктов": ["маркетинг"],
-  "системная инженерия": ["систем. инж"]
+  "системная инженерия": ["систем. инж"],
+  "системная архитектура": ["системная архитектра"]
 };
 
 function matchesCourseWithAliases(courseName: string, eventText: string): boolean {
@@ -292,6 +293,14 @@ export async function getStudentSchedule(studentName: string) {
       if (lowerCourse === "тьюториал") {
         return lowerValue.includes("тьюториал") || lowerValue.includes("разбор проектов");
       }
+      if (lowerCourse.includes("архите")) {
+        return lowerValue.includes("архите");
+      }
+
+      if (lowerCourse.includes("вещей")) {
+        return lowerValue.includes("вещей");
+      }
+
       return lowerValue.includes(lowerCourse);
     });
     
@@ -311,15 +320,14 @@ export async function getStudentSchedule(studentName: string) {
       }
     }
     
+    console.log(electiveCourse, cell.value.toLowerCase());
+    
     // ALSO: If the event text includes the elective course selected by the student, include it.
-    if (electiveCourse && cell.value.toLowerCase().includes(electiveCourse.toLowerCase())) {
+    if ((electiveCourse && cell.value.toLowerCase().includes(electiveCourse.toLowerCase())) || (cell.value.toLowerCase().includes("системная архит") && electiveCourse.includes("архит"))) {
       return true;
     }
     return false;
   });
-
-  console.log("Student schedule:", studentSchedule);
-
 
   return studentSchedule;
 }
